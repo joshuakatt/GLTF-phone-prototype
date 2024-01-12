@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile App Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #003366; /* Dark blue background */
+        }
+        .phone {
+            width: 300px;
+            height: 533px;
+            border: 2px solid #333;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        .phone-screen {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 5px; /* Closer to the right edge */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Align buttons to the right */
+        }
+        button {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: transparent;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+        }
+        .button-text {
+            visibility: hidden;
+            font-size: 12px;
+            color: black;
+            margin-right: 10px; /* Text to the left of the button icon */
+        }
+        button:hover .button-text {
+            visibility: visible;
+        }
+        #colorWheelContainer {
+            width: 150px;
+            height: 150px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: none;
+        }
+        .text-container {
+            text-align: center;
+            padding: 20px;
+            color: white;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5.5.1/dist/iro.min.js"></script>
+</head>
+<body>
+    <div class="text-container">
+        Palette of the Past
+    </div>
+    <div class="phone">
+        <div class="phone-screen" id="phoneScreen"></div>
+        <div id="colorWheelContainer"></div>
+        <div class="controls">
+            <button id="zoomOut"><span class="button-text">Zoom In</span>- </button>
+            <button id="zoomIn"><span class="button-text">Zoom Out</span>+</button>
+            <button id="rotate"><span class="button-text">Rotate</span>&#8635;</button>
+            <button id="reset"><span class="button-text">Reset</span>&#8634;</button>
+        </div>
+    </div>
+    <div class="text-container">
+        Use your mouse, (or finger if viewing it on a phone) to hold down and move the cube around in 3D.<br>
+        Click on a cube face to select, then use the color wheel to change its color.
+    </div>
+    <!-- Include Three.js and OrbitControls script -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        let scene, camera, renderer, cube, controls, raycaster, mouse, selectedFace;
+
+        function init() {
+            const phoneScreenElement = document.querySelector('.phone-screen');
+            const width = phoneScreenElement.clientWidth;
+            const height = phoneScreenElement.clientHeight;
+
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0xeeeeee); /* Light grey background for the phone screen */
+
+            camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 1000);
+            camera.position.set(0, 0, 5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(width, height);
+            phoneScreenElement.appendChild(renderer.domElement);
+
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
+
+            const geometry = new THREE.BoxGeometry(2, 2, 2); // Larger cube size
+            const faceMaterials = [
+                new THREE.MeshBasicMaterial({ color: 0xff0000 }),
+                new THREE.MeshBasicMaterial({ color: 0x00ff00 }),
+                new THREE.MeshBasicMaterial({ color: 0x0000ff }),
+                new THREE.MeshBasicMaterial({ color: 0xffff00 }),
+                new THREE.MeshBasicMaterial({ color: 0x00ffff }),
+                new THREE.MeshBasicMaterial({ color: 0xff00ff })
+            ];
+            cube = new THREE.Mesh(geometry, faceMaterials);
+            cube.position.set(0, 0, 0);
+            scene.add(cube);
+
+            raycaster = new THREE.Raycaster();
+            mouse = new THREE.Vector2();
+
+            const colorWheel = new iro.ColorPicker("#colorWheelContainer", {
+                width: 150,
+                layout: [{ component: iro.ui.Wheel }]
+            });
+            colorWheel.on('color:change', function(color) {
+                if (selectedFace !== undefined) {
+                    cube.material[selectedFace.face.materialIndex].color.set(color.hexString);
+                }
+            });
+
+            document.getElementById('zoomOut').addEventListener('click', () => camera.position.z -= 1);
+            document.getElementById('zoomIn').addEventListener('click', () => camera.position.z += 1);
+            document.getElementById('rotate').addEventListener('click', () => cube.rotation.x += 0.1);
+            document.getElementById('reset').addEventListener('click', () => {
+                camera.position.set(5, 1, 5);
+                camera.lookAt(scene.position);
+                cube.rotation.set(0, 0, 0);
+                selectedFace = null;
+                document.getElementById('colorWheelContainer').style.display = 'none';
+            });
+
+            window.addEventListener('click', onMouseClick, false);
+            window.addEventListener('resize', onWindowResize, false);
+
+            animate();
+        }
+
+        function onMouseClick(event) {
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            raycaster.setFromCamera(mouse, camera);
+
+            const intersects = raycaster.intersectObject(cube);
+            if (intersects.length > 0) {
+                selectedFace = intersects[0];
+                document.getElementById('colorWheelContainer').style.display = 'block';
+                cube.material.forEach((mat, idx) => {
+                    mat.opacity = idx === selectedFace.face.materialIndex ? 0.5 : 1;
+                    mat.transparent = true;
+                });
+            } else {
+                document.getElementById('colorWheelContainer').style.display = 'none';
+                cube.material.forEach(mat => mat.opacity = 1);
+            }
+        }
+
+        function onWindowResize() {
+            const width = phoneScreenElement.clientWidth;
+            const height = phoneScreenElement.clientHeight;
+            renderer.setSize(width, height);
+            camera.aspect = width / height;
+            camera.updateProjectionMatrix();
+        }
+
+        function animate() {
+            requestAnimationFrame(animate);
+            controls.update();
+            renderer.render(scene, camera);
+        }
+
+        init();
+    </script>
+</body>
+</html>
