@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile App Prototype</title>
+    <style>
+        body {
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: #003366; /* Dark blue background */
+        }
+        .phone {
+            width: 300px;
+            height: 533px;
+            border: 2px solid #333;
+            border-radius: 20px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            background-color: white;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.5);
+            position: relative;
+        }
+        .phone-screen {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .controls {
+            position: absolute;
+            top: 10px;
+            right: 5px; /* Closer to the right edge */
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end; /* Align buttons to the right */
+        }
+        button {
+            margin: 5px 0;
+            padding: 5px 10px;
+            border: none;
+            border-radius: 5px;
+            background-color: transparent;
+            color: #007bff;
+            cursor: pointer;
+            font-size: 24px;
+            display: flex;
+            align-items: center;
+        }
+        .button-text {
+            visibility: hidden;
+            font-size: 12px;
+            color: black;
+            margin-right: 10px; /* Text to the left of the button icon */
+        }
+        button:hover .button-text {
+            visibility: visible;
+        }
+        #colorWheelContainer {
+            width: 150px;
+            height: 150px;
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            display: none;
+        }
+        .text-container {
+            text-align: center;
+            padding: 20px;
+            color: white;
+        }
+        .text-container-h {
+            text-align: center;
+            padding: 20px;
+            color: white;
+            font-size: 36px; /* Larger font size */
+            font-weight: bold; /* Make the font bold */
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Optional: Add text shadow for depth */
+            font-family: 'Arial', sans-serif; /* Choose a font-family that suits your design */
+            margin-bottom: 20px;
+        }
+        .menu-bar {
+            display: flex;
+            justify-content: space-around;
+            background-color: #555;
+            color: white;
+            padding: 10px 0;
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .menu-item img {
+            max-height: 40px; /* Limit the size of images */
+            max-width: 100%;
+        }
+
+        .menu-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+        }
+        #commentInput {
+            width: 90%;
+            margin: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            border: 1px solid #ddd;
+        }
+
+        #postCommentButton {
+            margin-left: 10px;
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #007bff;
+            color: white;
+            font-size: 16px;
+            cursor: pointer;
+        }
+
+        #commentsContainer {
+            margin: 10px;
+            overflow-y: auto;
+            max-height: 300px;
+            border-top: 1px solid #ddd;
+        }
+
+        .comment {
+            padding: 10px;
+            border-bottom: 1px solid #eee;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            margin-bottom: 5px;
+        }
+    </style>
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5.5.1/dist/iro.min.js"></script>
+</head>
+<body>
+    <div class="text-container-h">
+        Palette of the Past
+    </div>
+    <div class="phone">
+        <div class="phone-screen" id="phoneScreen">
+            <textarea id="commentInput" placeholder="Write a comment..."></textarea>
+            <button id="postCommentButton" onclick="addComment()">Post Comment</button>
+            <div id="commentsContainer">
+                <!-- Pre-populated comments -->
+                <div class="comment">The interactive displays are amazing! - Alex</div>
+                <div class="comment">Loved the virtual tour of ancient civilizations. - Mia</div>
+                <div class="comment">A great experience for the kids, especially the dinosaur exhibit! - Jordan</div>
+                <!-- More comments will be added here -->
+            </div>
+        </div>
+        <div class="menu-bar">
+            <button class="menu-button" onclick="location.href='index.html'">
+                <div class="menu-item">
+                    <img src="3d_menu.png" alt="3D">
+                </div>
+            </button>
+            <button class="menu-button" onclick="location.href='history.html'">
+                <div class="menu-item">
+                    <img src="his_menu.png" alt="history">
+                </div>
+            </button>
+            <button class="menu-button" onclick="location.href='comm.html'">
+                <div class="menu-item">
+                    <img src="com_menu.png" alt="comm">
+                </div>
+            </button>
+        </div>
+    </div>
+    <div class="text-container">
+        Users can communicate with the collective of all visitors and can add their own comments for other to see as well.
+    </div>
+    <!-- Include Three.js and OrbitControls script -->
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/build/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.126.1/examples/js/controls/OrbitControls.js"></script>
+    <script>
+        // Function to add comment
+        function addComment() {
+            const input = document.getElementById('commentInput');
+            const commentsContainer = document.getElementById('commentsContainer');
+
+            if(input.value.trim() !== "") {
+                const commentDiv = document.createElement('div');
+                commentDiv.textContent = input.value;
+                commentDiv.style.borderBottom = "1px solid #ccc";
+                commentDiv.style.padding = "5px";
+                commentsContainer.appendChild(commentDiv);
+
+                input.value = ""; // Clear the text area after posting
+            }
+        }
+
+    </script>
+</body>
+</html>
